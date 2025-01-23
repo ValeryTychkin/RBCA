@@ -1,0 +1,14 @@
+[package]
+name = "repository-db-lib"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+sea-orm = { workspace = true }
+uuid = { workspace = true }
+entity-lib = { workspace = true }
+tokio = { workspace = true }
+adapter-lib = { workspace = true }
+async-trait = { workspace = true }
+orm-addons-lib = { workspace = true }

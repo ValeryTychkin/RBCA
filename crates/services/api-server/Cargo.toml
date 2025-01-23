@@ -1,0 +1,33 @@
+[package]
+name = "api-server"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+sea-orm = { workspace = true }
+chrono = { workspace = true }
+env-settings = { workspace = true }
+env-settings-derive = { workspace = true }
+env-settings-utils = { workspace = true }
+once_cell = { workspace = true }
+rocket = { workspace = true }
+rocket-validation = { workspace = true }
+rocket_okapi = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_derive = { workspace = true }
+serde_json = { workspace = true }
+serde_valid = { workspace = true }
+serde_with = { workspace = true }
+tokio = { workspace = true }
+uuid = { workspace = true }
+time = { workspace = true }
+util-lib = { workspace = true }
+migration = { workspace = true }
+adapter-lib = { workspace = true }
+repository-db-lib = { workspace = true }
+repository-redis-lib = { workspace = true }
+quote = { workspace = true }
+orm-addons-lib = { workspace = true }
+sea-query = { workspace = true }

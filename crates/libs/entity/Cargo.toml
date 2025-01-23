@@ -1,0 +1,21 @@
+[package]
+name = "entity-lib"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+util-lib = { workspace = true }
+once_cell = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_derive = { workspace = true }
+serde_json = { workspace = true }
+serde_valid = { workspace = true }
+tokio = { workspace = true }
+uuid = { workspace = true }
+sea-orm = { workspace = true }
+chrono = { workspace = true }
+time = { workspace = true }
+adapter-lib = { workspace = true }
+repository-amqp-lib = { workspace = true }

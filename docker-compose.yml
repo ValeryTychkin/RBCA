@@ -1,0 +1,42 @@
+
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: api
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  keydb:
+    image: eqalpha/keydb:latest
+    container_name: keydb
+    ports:
+      - "6379:6379"
+    volumes:
+      - keydb_data:/data
+      - type: bind
+        source: "./.keydb.conf"
+        target: "/etc/keydb/.keydb.conf"
+
+  mq:
+    restart: always
+    image: rabbitmq:3.12-management
+    environment:
+      TZ: "UTC"
+      RABBITMQ_DEFAULT_USER: "root"
+      RABBITMQ_DEFAULT_PASS: "root"
+      RABBITMQ_DEFAULT_VHOST: "api"
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+
+volumes:
+  postgres_data:
+  keydb_data:

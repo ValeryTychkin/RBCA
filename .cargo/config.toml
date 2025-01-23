@@ -1,0 +1,21 @@
+[alias]
+# Build docs
+docs = "doc --no-deps --workspace --document-private-items"
+# Just run
+rest_api = "run -p api-server"
+rest_api_r = "rest_api --release"
+# Run with hot reload
+w_rest_api = "watch -x rest_api"
+w_rest_api_r = "watch -x rest_api_r"
+# Migration
+gen_migration = "run -p migration --bin ./crates/services/migration -- generate"
+
+[resolver]
+cargo-watch = "8.5" # Hot reload
+
+[env]
+REDIS_URL = "redis://redis@localhost:6379/0"
+JWT_SECRET = "secret"
+DATABASE_URL = "postgresql://root:root@localhost:5432/api"
+DATABASE_DEBUG = "1"
+RABBIT_URL = "amqp://root:root@mq:5672/api"
