@@ -53,9 +53,10 @@ where
         limit: Option<u64>,
         with_total_count: bool,
     ) -> Result<(Vec<E::Model>, u64, u64, u64), DbErr> {
-        let opt_offsest = offset;
+        // Check optional offset on max/min value or None (if None set default)
+        let opt_offset = offset;
         let offset: u64;
-        match opt_offsest {
+        match opt_offset {
             Some(v) => {
                 offset = v;
             }
@@ -64,6 +65,7 @@ where
             }
         }
 
+        // Check optional limit on max/min value or None (if None set default)
         let opt_limit = limit;
         let limit: u64;
         match opt_limit {
@@ -80,14 +82,19 @@ where
                 limit = LIMIT_DEFAULT;
             }
         }
+
+        // Try to unwrap filter or set withoute filter (all)
         let filter: Condition = filter.unwrap_or(Condition::all());
+
         let db = self.get_db().await;
+
         let models_res = E::find()
             .filter(filter.to_owned())
             .offset(offset)
             .limit(limit)
             .all(db)
             .await;
+
         match models_res {
             Ok(models) => {
                 let mut total_count = 0;

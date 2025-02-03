@@ -11,6 +11,5 @@ path = "src/lib.rs"
 [dependencies]
 tokio = { workspace = true }
 sea-orm = { workspace = true }
-time = { workspace = true }
-uuid = { workspace = true }
 sea-orm-migration = { workspace = true }
+adapter-lib = { workspace = true }

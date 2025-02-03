@@ -176,7 +176,7 @@ pub fn impl_entity_filterable(input: TokenStream) -> TokenStream {
     // Generate the implementation of the EntityFilterableTrait trait for the struct
     let expanded = quote! {
         impl orm_addons_lib::prelude::EntityFilterableTrait for #ident {
-            fn to_condition<E>(&self, base_condition: sea_orm::Condition) -> sea_orm::Condition
+            fn to_condition<E>(&self) -> sea_orm::Condition
             where
                 E: sea_orm::EntityTrait,
             {
@@ -189,7 +189,7 @@ pub fn impl_entity_filterable(input: TokenStream) -> TokenStream {
                     coluns_map.insert(column.to_string(), column);
                 }
 
-                let mut condition = base_condition;
+                let mut condition = sea_orm::Condition::all();
 
                 #(#vars_quete)*
 

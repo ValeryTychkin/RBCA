@@ -1,4 +1,8 @@
-use sea_orm::entity::{prelude::*, ActiveValue};
+use sea_orm::{
+    entity::{prelude::*, ActiveValue},
+    QuerySelect,
+};
+use util_lib::crypto::{Bcrypt, Hasher};
 use uuid::Uuid;
 
 use crate::event::user as user_event;
@@ -23,6 +27,12 @@ pub struct Model {
     pub updated_at: OffsetDateTime,
 }
 
+impl Model {
+    pub fn is_valid_password(&self, password: &str) -> bool {
+        Bcrypt::new().verify(password, self.password.as_str())
+    }
+}
+
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
@@ -42,8 +52,24 @@ impl ActiveModelBehavior for ActiveModel {
         C: ConnectionTrait,
     {
         let mut s = self;
+
+        let bcrypt = Bcrypt::new();
         if insert {
             s.id = ActiveValue::set(Uuid::new_v4());
+            s.password = ActiveValue::set(bcrypt.hash(s.password.unwrap().as_str()));
+        } else {
+            let old_password: String = Entity::find_by_id(s.id.clone().unwrap())
+                .column(Column::Password)
+                .into_tuple()
+                .one(db)
+                .await
+                .unwrap()
+                .unwrap();
+
+            // Check password on update (save hash if update)
+            if s.password.clone().unwrap() != old_password {
+                s.password = ActiveValue::set(bcrypt.hash(s.password.unwrap().as_str()));
+            }
         }
         s.updated_at = ActiveValue::set(OffsetDateTime::now_utc());
         user_event::create_or_update(&s, db).await;

@@ -34,7 +34,7 @@ pub async fn get_by_id(
 #[post("/", data = "<org>")]
 pub async fn create(
     org: Json<org_schema::OrganizationCreate>,
-    _user_claims: SelfUserTokenClaims,
+    // _user_claims: SelfUserTokenClaims,
 ) -> (Status, Json<org_schema::Organization>) {
     (Status::Created, Json(org_usecase::create_new(org.0).await))
 }

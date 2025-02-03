@@ -7,20 +7,22 @@ use repository_db_lib::{
     user::{user_entity, User as UserRep},
     Repository,
 };
-use sea_orm::Condition;
 
 pub async fn get_all(query_filter: user_query::User) -> user_schema::UserList {
+    // Get filter
+    let filter = query_filter.to_condition::<user_entity::Entity>();
+    // Get Models
     let rep = UserRep::new().await;
-    let condition = query_filter.to_condition::<user_entity::Entity>(Condition::all());
     let (models, offset, limit, total_count) = rep
         .get_multiple(
-            Some(condition.to_owned()),
+            Some(filter.to_owned()),
             query_filter.offset,
             query_filter.limit,
             true,
         )
         .await
         .unwrap();
+    // Convert Models into Schemes
     let mut users: Vec<user_schema::User> = vec![];
     for model in models {
         users.push(user_schema::User {

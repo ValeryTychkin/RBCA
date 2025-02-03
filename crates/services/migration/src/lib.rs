@@ -1,3 +1,5 @@
+use adapter_lib::db;
+use sea_orm::DatabaseConnection;
 pub use sea_orm_migration::prelude::*;
 
 mod m20220101_000001_create_table;
@@ -13,4 +15,9 @@ impl MigratorTrait for Migrator {
             Box::new(m20250110_205852_add_user_password::Migration),
         ]
     }
+}
+
+pub async fn init() {
+    let db: &DatabaseConnection = db::get_connection().await;
+    Migrator::up(db, None).await.unwrap();
 }

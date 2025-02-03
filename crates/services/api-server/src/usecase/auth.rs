@@ -7,36 +7,36 @@ use util_lib::{
     jwt::encode as jwt_encode,
 };
 
+pub enum ErrorLogin {
+    Email,
+    Password,
+}
+
 pub async fn login(
     user_login: auth_schema::Login,
-) -> Result<auth_jwt::Oauth2LoginResult, base_schema::ErrorResult> {
-    let rep = UserRep::new().await;
-
+) -> Result<auth_jwt::Oauth2LoginResult, ErrorLogin> {
+    // Get filter
     let filter = Condition::all().add(user_entity::Column::Email.eq(user_login.email.to_owned()));
+    // Try to get User
+    let rep = UserRep::new().await;
     let user: user_entity::Model;
     match rep.get_one(Some(filter)).await.unwrap() {
         Some(v) => user = v,
         None => {
-            return Err(base_schema::ErrorResult {
-                err_msg: "email doesn't exist".to_string(),
-                err_detail: None,
-            });
+            return Err(ErrorLogin::Email);
         }
     }
-    let (access_claims, refresh_claims) = auth_jwt::Oauth2TokenClaims::new_claims();
-
-    let access_user_claims = auth_schema::SelfUserTokenClaims {
-        id: user.id,
-        oauth2_claims: access_claims,
-    };
-    let refresh_user_claims = auth_schema::SelfUserTokenClaims {
-        id: user.id,
-        oauth2_claims: refresh_claims,
-    };
-
+    // Check User password
+    if !user.is_valid_password(user_login.password.as_str()) {
+        return Err(ErrorLogin::Password);
+    }
+    // Get access and refresh user claims
+    let (access_user_claims, refresh_user_claims) =
+        auth_schema::SelfUserTokenClaims::acc_and_ref_from_model(&user);
+    // Save user claims in cache
     save_token(&access_user_claims).await;
     save_token(&refresh_user_claims).await;
-
+    // Convert claims into jwt and return
     Ok(auth_jwt::Oauth2LoginResult {
         access_token: jwt_encode(&access_user_claims).unwrap(),
         refresh_token: jwt_encode(&refresh_user_claims).unwrap(),
@@ -50,8 +50,9 @@ pub async fn logout(user_claims: auth_schema::SelfUserTokenClaims) {
 }
 
 pub async fn introspect(token_intro: auth_jwt::IntrospectInput) -> auth_jwt::IntrospectResult {
+    // Try to deserialize claims from jwt
     let user_claims: auth_schema::SelfUserTokenClaims;
-    match auth_schema::SelfUserTokenClaims::from_string(&token_intro.token) {
+    match auth_schema::SelfUserTokenClaims::from_jwt(&token_intro.token) {
         Ok(v) => user_claims = v,
         Err(_) => {
             return auth_jwt::IntrospectResult {
@@ -60,6 +61,7 @@ pub async fn introspect(token_intro: auth_jwt::IntrospectInput) -> auth_jwt::Int
             };
         }
     }
+    // Ceck match with token type (if token type was send)
     if let Some(_) = &token_intro.token_type_hint {
         if !(token_intro.is_access() == user_claims.oauth2_claims.is_access()) {
             return auth_jwt::IntrospectResult {
@@ -68,21 +70,21 @@ pub async fn introspect(token_intro: auth_jwt::IntrospectInput) -> auth_jwt::Int
             };
         }
     }
-
+    // Check lifetime range
     if let Err(_) = user_claims.oauth2_claims.validate_date_range() {
         return auth_jwt::IntrospectResult {
             active: false,
             ..Default::default()
         };
     }
-
+    // Check token not revoked (on exist)
     if !token_is_exist(&user_claims).await {
         return auth_jwt::IntrospectResult {
             active: false,
             ..Default::default()
         };
     }
-
+    // Return result
     auth_jwt::IntrospectResult {
         active: true,
         ..Default::default()
@@ -92,18 +94,16 @@ pub async fn introspect(token_intro: auth_jwt::IntrospectInput) -> auth_jwt::Int
 pub async fn registration(
     user_reg: auth_schema::Register,
 ) -> Result<user_schema::User, base_schema::ErrorResult> {
-    let rep = UserRep::new().await;
-
-    // check if email allready exist
+    // Check if email allready exist
     let filter = Condition::all().add(user_entity::Column::Email.eq(user_reg.email.to_owned()));
+    let rep = UserRep::new().await;
     if let Some(_) = rep.get_one(Some(filter)).await.unwrap() {
         return Err(base_schema::ErrorResult {
             err_msg: "email allready used".to_string(),
             err_detail: None,
         });
     }
-
-    // save new user
+    // Save new user
     let active_model = user_entity::ActiveModel {
         name: ActiveValue::Set(user_reg.name),
         email: ActiveValue::Set(user_reg.email),
@@ -112,6 +112,7 @@ pub async fn registration(
         organization_id: ActiveValue::Set(user_reg.organization_id),
         ..Default::default()
     };
+    // Convert Model into Schema
     let model = rep.create(active_model).await.unwrap();
     Ok(user_schema::User {
         id: model.id,

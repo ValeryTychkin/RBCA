@@ -25,7 +25,6 @@ uuid = { workspace = true }
 time = { workspace = true }
 util-lib = { workspace = true }
 migration = { workspace = true }
-adapter-lib = { workspace = true }
 repository-db-lib = { workspace = true }
 repository-redis-lib = { workspace = true }
 quote = { workspace = true }

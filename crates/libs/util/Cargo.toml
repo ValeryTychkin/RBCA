@@ -19,3 +19,4 @@ env-settings-derive = { workspace = true }
 env-settings-utils = { workspace = true }
 once_cell = { workspace = true }
 uuid = { workspace = true }
+bcrypt = { workspace = true }

@@ -4,7 +4,7 @@ version: '3.9'
 services:
   postgres:
     image: postgres:17
-    container_name: postgres
+    container_name: rbca-postgres
     ports:
       - "5432:5432"
     environment:
@@ -16,7 +16,7 @@ services:
 
   keydb:
     image: eqalpha/keydb:latest
-    container_name: keydb
+    container_name: rbca-keydb
     ports:
       - "6379:6379"
     volumes:
@@ -28,6 +28,7 @@ services:
   mq:
     restart: always
     image: rabbitmq:3.12-management
+    container_name: rbca-mq
     environment:
       TZ: "UTC"
       RABBITMQ_DEFAULT_USER: "root"

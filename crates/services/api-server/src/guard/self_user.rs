@@ -27,7 +27,7 @@ impl<'r> FromRequest<'r> for SelfUserTokenClaims {
         if let Some(header_value) = request.headers().get_one("authorization") {
             if let Ok(token_str) = auth_jwt::extract_bearer_token(header_value) {
                 // Parse the token into a SelfUserTokenClaims object
-                if let Ok(user) = Self::from_string(&token_str) {
+                if let Ok(user) = Self::from_jwt(&token_str) {
                     // Ensure the OAuth2 claims are valid (access type)
                     if user.oauth2_claims.is_access() {
                         if let Ok(_) = user.oauth2_claims.validate_date_range() {

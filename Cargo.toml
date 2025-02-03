@@ -82,3 +82,4 @@ redis = { version = "^0.28", features = [
 ] }
 proc-macro-error = "1"
 lapin = "2.5.0"
+bcrypt = "0.16"

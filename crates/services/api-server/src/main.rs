@@ -4,8 +4,7 @@ mod route;
 mod schema;
 mod usecase;
 
-use adapter_lib::db;
-use migration::{sea_orm::DatabaseConnection, Migrator, MigratorTrait};
+use migration::init as init_migration;
 
 #[macro_use]
 extern crate rocket;
@@ -35,8 +34,7 @@ macro_rules! merdge_mulit_routes {
 
 #[rocket::main]
 pub async fn main() -> Result<(), rocket::Error> {
-    let db: &DatabaseConnection = db::get_connection().await;
-    Migrator::up(db, None).await.unwrap();
+    init_migration().await;
 
     let mut _rocket = rocket::build();
 

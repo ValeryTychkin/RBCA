@@ -1,3 +1,4 @@
+use repository_db_lib::user::user_entity;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_valid::Validate;
@@ -31,11 +32,27 @@ impl SelfUserTokenClaims {
         get_prefix_key_for_cache(self.id.to_string())
     }
 
-    pub fn from_string(token_str: &String) -> jwt::JWTResult<Self> {
+    pub fn from_jwt(token_str: &String) -> jwt::JWTResult<Self> {
         match jwt::decode::<Self>(&token_str) {
             Ok(token) => Ok(token.claims),
             Err(e) => Err(e),
         }
+    }
+
+    pub fn from_model(user: &user_entity::Model, claims: Oauth2TokenClaims) -> Self {
+        Self {
+            id: user.id,
+            oauth2_claims: claims,
+        }
+    }
+
+    pub fn acc_and_ref_from_model(user: &user_entity::Model) -> (Self, Self) {
+        let (access_claims, refresh_claims) = Oauth2TokenClaims::new_claims();
+
+        let access_user_claims = Self::from_model(user, access_claims);
+        let refresh_user_claims = Self::from_model(user, refresh_claims);
+
+        (access_user_claims, refresh_user_claims)
     }
 }
 

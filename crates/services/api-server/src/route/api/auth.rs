@@ -5,7 +5,7 @@ use crate::{
         base::ErrorResult,
         user::User,
     },
-    usecase::auth as auth_usecase,
+    usecase::auth::{self as auth_usecase, ErrorLogin},
 };
 use rocket::{form::Form, http::Status, serde::json::Json};
 use rocket_okapi::{okapi::openapi3::OpenApi, openapi, settings::OpenApiSettings};
@@ -27,7 +27,22 @@ pub async fn login(
 ) -> (Status, Result<Json<Oauth2LoginResult>, Json<ErrorResult>>) {
     match auth_usecase::login(user_login.0).await {
         Ok(v) => (Status::Ok, Ok(Json(v))),
-        Err(v) => (Status::BadRequest, Err(Json(v))),
+        Err(v) => match v {
+            ErrorLogin::Email => (
+                Status::BadRequest,
+                Err(Json(ErrorResult {
+                    err_msg: "email doesn't exist".to_string(),
+                    err_detail: None,
+                })),
+            ),
+            ErrorLogin::Password => (
+                Status::BadRequest,
+                Err(Json(ErrorResult {
+                    err_msg: "incorrect password".to_string(),
+                    err_detail: None,
+                })),
+            ),
+        },
     }
 }
 
