@@ -12,41 +12,46 @@ use util_lib::auth::jwt as auth_jwt;
 
 use crate::{schema::auth::SelfUserTokenClaims, usecase::auth as auth_usecase};
 
+use super::GuardError;
+
 #[derive(Debug)]
-pub enum UserError {
-    MissingAuthToken,
-    WrongToken,
-    MissingToken,
+pub struct User {
+    pub claims: SelfUserTokenClaims,
 }
 
 #[async_trait]
-impl<'r> FromRequest<'r> for SelfUserTokenClaims {
-    type Error = UserError;
+impl<'r> FromRequest<'r> for User {
+    type Error = GuardError;
 
     async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
         if let Some(header_value) = request.headers().get_one("authorization") {
             if let Ok(token_str) = auth_jwt::extract_bearer_token(header_value) {
                 // Parse the token into a SelfUserTokenClaims object
-                if let Ok(user) = Self::from_jwt(&token_str) {
+                if let Ok(user_claims) = SelfUserTokenClaims::from_jwt(&token_str) {
                     // Ensure the OAuth2 claims are valid (access type)
-                    if user.oauth2_claims.is_access() {
-                        if let Ok(_) = user.oauth2_claims.validate_date_range() {
-                            if auth_usecase::token_is_exist(&user).await {
-                                return Outcome::Success(user);
+                    if user_claims.oauth2_claims.is_access() {
+                        if let Ok(_) = user_claims.oauth2_claims.validate_date_range() {
+                            if auth_usecase::token_is_exist(&user_claims).await {
+                                return Outcome::Success(Self {
+                                    claims: user_claims,
+                                });
                             }
-                            return Outcome::Error((Status::Unauthorized, UserError::MissingToken));
+                            return Outcome::Error((
+                                Status::Unauthorized,
+                                GuardError::MissingToken,
+                            ));
                         }
                     }
                 }
             }
-            return Outcome::Error((Status::Unauthorized, UserError::WrongToken));
+            return Outcome::Error((Status::Unauthorized, GuardError::WrongToken));
         }
-        Outcome::Error((Status::Unauthorized, UserError::MissingAuthToken))
+        Outcome::Error((Status::Unauthorized, GuardError::MissingAuthToken))
     }
 }
 
 // Implementing OpenApiFromRequest to document the API security requirements in OpenAPI format
-impl<'a> OpenApiFromRequest<'a> for SelfUserTokenClaims {
+impl<'a> OpenApiFromRequest<'a> for User {
     fn from_request_input(
         _gen: &mut OpenApiGenerator,
         _name: String,

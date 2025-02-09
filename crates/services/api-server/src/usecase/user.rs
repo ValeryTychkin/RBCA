@@ -2,7 +2,7 @@ use crate::{
     query::user as user_query,
     schema::{base::Pagination, user as user_schema},
 };
-use orm_addons_lib::prelude::EntityFilterableTrait;
+use orm_util_lib::prelude::EntityFilterableTrait;
 use repository_db_lib::{
     user::{user_entity, User as UserRep},
     Repository,
@@ -29,7 +29,6 @@ pub async fn get_all(query_filter: user_query::User) -> user_schema::UserList {
             id: model.id,
             name: model.name,
             email: model.email,
-            organization_id: model.organization_id,
             is_deleted: model.is_deleted,
             created_at: model.created_at,
             updated_ad: model.updated_at,

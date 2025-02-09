@@ -1,3 +1,40 @@
+pub fn snake_to_camel(snake: &str, upper_first: bool) -> String {
+    let mut camel = String::new();
+    let mut need_upper = upper_first;
+
+    for ch in snake.chars() {
+        if ch == '_' {
+            need_upper = true;
+        } else {
+            if need_upper {
+                camel.push(ch.to_ascii_uppercase());
+                need_upper = false;
+            } else {
+                camel.push(ch);
+            }
+        }
+    }
+
+    camel
+}
+
+pub fn camel_to_snake(camel: &str) -> String {
+    let mut snake = String::new();
+
+    for (i, ch) in camel.chars().enumerate() {
+        if ch.is_uppercase() {
+            if i != 0 {
+                snake.push('_');
+            }
+            snake.push(ch.to_ascii_lowercase());
+        } else {
+            snake.push(ch);
+        }
+    }
+
+    snake
+}
+
 pub mod validate {
     use super::validate;
     use serde::{de::Error, Deserialize, Deserializer};

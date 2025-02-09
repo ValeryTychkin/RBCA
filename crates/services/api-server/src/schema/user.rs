@@ -11,7 +11,6 @@ pub struct User {
     pub id: Uuid,
     pub name: String,
     pub email: String,
-    pub organization_id: Uuid,
     pub is_deleted: bool,
     #[serde(with = "rfc3339")]
     #[schemars(schema_with = "date_time_rfc3339")]

@@ -5,7 +5,7 @@ edition = "2021"
 publish = false
 
 [dependencies]
-util-lib-proc = { path = "./proc" }
+util-lib-proc = { path = "./proc-macro" }
 chrono = { workspace = true }
 serde = { workspace = true }
 time = { workspace = true }

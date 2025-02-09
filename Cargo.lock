@@ -221,7 +221,7 @@ dependencies = [
  "env-settings-utils",
  "migration",
  "once_cell",
- "orm-addons-lib",
+ "orm-util-lib",
  "quote",
  "repository-db-lib",
  "repository-redis-lib",
@@ -2344,22 +2344,27 @@ dependencies = [
 ]
 
 [[package]]
-name = "orm-addons-lib"
+name = "orm-util-lib"
 version = "0.1.0"
 dependencies = [
- "orm-addons-lib-proc",
+ "orm-util-proc-macro",
  "sea-orm",
  "sea-query",
 ]
 
 [[package]]
-name = "orm-addons-lib-proc"
+name = "orm-util-proc-macro"
 version = "0.1.0"
 dependencies = [
  "proc-macro2",
  "quote",
  "sea-orm",
  "sea-query",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "serde_valid",
+ "serde_with",
  "syn 2.0.96",
 ]
 
@@ -2952,7 +2957,7 @@ dependencies = [
  "adapter-lib",
  "async-trait",
  "entity-lib",
- "orm-addons-lib",
+ "orm-util-lib",
  "sea-orm",
  "tokio",
  "uuid 1.11.1",
@@ -3051,6 +3056,25 @@ dependencies = [
  "uuid 1.11.1",
  "version_check",
  "yansi",
+]
+
+[[package]]
+name = "rocket-util-lib"
+version = "0.1.0"
+dependencies = [
+ "rocket-util-proc-macro",
+]
+
+[[package]]
+name = "rocket-util-proc-macro"
+version = "0.1.0"
+dependencies = [
+ "darling 0.20.10",
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.96",
+ "util-lib",
 ]
 
 [[package]]
@@ -4619,6 +4643,7 @@ dependencies = [
 name = "util-lib-proc"
 version = "0.1.0"
 dependencies = [
+ "darling 0.20.10",
  "proc-macro-error",
  "proc-macro2",
  "quote",

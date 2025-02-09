@@ -22,7 +22,8 @@ where components are organized into distinct layers. Each layer has a well-defin
 - **libs**: Contains various libraries used in the services and other libs.
   - **adapter**: Adapter layer for connecting different systems (database, amqp, ...).
   - **entity**: Core domain entities and models.
-  - **orm-addons**: Additional ORM-related functionality.
+  - **orm-util**: Utility ORM-related functionality.
+  - **rocket-util**: Utility functionality for rocket.
   - **repository-amqp**: Repository implementation for AMQP.
   - **repository-db**: Repository for database interaction.
   - **repository-redis**: Redis-based repository.

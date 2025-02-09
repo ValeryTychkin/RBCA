@@ -1,10 +1,9 @@
-pub mod organization;
 pub mod user;
 
 use std::u64;
 
 use async_trait::async_trait;
-use orm_addons_lib::{LIMIT_DEFAULT, LIMIT_MAX, LIMIT_MIN, OFFSET_DEFAULT};
+use orm_util_lib::{LIMIT_DEFAULT, LIMIT_MAX, LIMIT_MIN, OFFSET_DEFAULT};
 use sea_orm::{
     ActiveModelTrait, Condition, DatabaseConnection, DbErr, EntityTrait, IntoActiveModel,
     PaginatorTrait, PrimaryKeyTrait, QueryFilter, QuerySelect,

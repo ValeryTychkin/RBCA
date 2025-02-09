@@ -19,6 +19,8 @@ pub struct Login {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SelfUserTokenClaims {
     pub id: Uuid,
+    pub is_staff: bool,
+    pub staff_permissions: Vec<String>,
     #[serde(flatten)]
     pub oauth2_claims: Oauth2TokenClaims,
 }
@@ -40,8 +42,14 @@ impl SelfUserTokenClaims {
     }
 
     pub fn from_model(user: &user_entity::Model, claims: Oauth2TokenClaims) -> Self {
+        let mut staff_permissions: Vec<String> = vec![];
+        for permission in &user.staff_permissions {
+            staff_permissions.push(serde_json::to_string(permission).unwrap());
+        }
         Self {
             id: user.id,
+            is_staff: user.is_staff,
+            staff_permissions,
             oauth2_claims: claims,
         }
     }
@@ -74,5 +82,4 @@ pub struct Register {
     pub password: String,
     #[schemars(schema_with = "date_rfc3339")]
     pub birthday: Date,
-    pub organization_id: Uuid,
 }

@@ -1,7 +1,8 @@
 use crate::{
+    guard::user as user_guard,
     merdge_mulit_routes,
     schema::{
-        auth::{Login, Register, SelfUserTokenClaims},
+        auth::{Login, Register},
         base::ErrorResult,
         user::User,
     },
@@ -48,8 +49,8 @@ pub async fn login(
 
 #[openapi(tag = "Auth")]
 #[post("/logout")]
-pub async fn logout(user_claims: SelfUserTokenClaims) -> Status {
-    auth_usecase::logout(user_claims).await;
+pub async fn logout(user: user_guard::User) -> Status {
+    auth_usecase::logout(user.claims).await;
     Status::NoContent
 }
 

@@ -2,12 +2,34 @@ use sea_orm::{
     entity::{prelude::*, ActiveValue},
     QuerySelect,
 };
+use serde::{Deserialize, Serialize};
 use util_lib::crypto::{Bcrypt, Hasher};
 use uuid::Uuid;
 
 use crate::event::user as user_event;
 
 use time::{Date, OffsetDateTime};
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[sea_orm(
+    rs_type = "String",
+    db_type = "Enum",
+    enum_name = "user_staff_permission"
+)]
+pub enum UserStaffPermission {
+    #[sea_orm(string_value = "CreateApplication")]
+    CreateApplication,
+
+    #[sea_orm(string_value = "CreateStaffUser")]
+    CreateStaffUser,
+    #[sea_orm(string_value = "DeleteStaffUser")]
+    DeleteStaffUser,
+    #[sea_orm(string_value = "UpdateStaffUser")]
+    UpdateStaffUser,
+
+    #[sea_orm(string_value = "DeleteUser")]
+    DeleteUser,
+}
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "user")]
@@ -19,8 +41,10 @@ pub struct Model {
     pub email: String,
     pub password: String,
     pub birthday: Date,
-    #[sea_orm(indexed)]
-    pub organization_id: Uuid,
+    #[sea_orm(default_value = "false")]
+    pub is_staff: bool,
+    #[sea_orm(default_value = "Vec::new()")]
+    pub staff_permissions: Vec<UserStaffPermission>,
     #[sea_orm(default_value = "false")]
     pub is_deleted: bool,
     pub created_at: OffsetDateTime,
@@ -34,16 +58,7 @@ impl Model {
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {
-    #[sea_orm(
-        belongs_to = "super::organization::Entity",
-        from = "Column::OrganizationId",
-        to = "super::organization::Column::Id",
-        on_update = "Cascade",
-        on_delete = "Cascade"
-    )]
-    Organization,
-}
+pub enum Relation {}
 
 #[async_trait::async_trait]
 impl ActiveModelBehavior for ActiveModel {

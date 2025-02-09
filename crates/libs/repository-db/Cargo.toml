@@ -11,4 +11,4 @@ entity-lib = { workspace = true }
 tokio = { workspace = true }
 adapter-lib = { workspace = true }
 async-trait = { workspace = true }
-orm-addons-lib = { workspace = true }
+orm-util-lib = { workspace = true }

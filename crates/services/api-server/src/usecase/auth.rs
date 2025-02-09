@@ -109,7 +109,6 @@ pub async fn registration(
         email: ActiveValue::Set(user_reg.email),
         password: ActiveValue::Set(user_reg.password),
         birthday: ActiveValue::Set(user_reg.birthday),
-        organization_id: ActiveValue::Set(user_reg.organization_id),
         ..Default::default()
     };
     // Convert Model into Schema
@@ -118,7 +117,6 @@ pub async fn registration(
         id: model.id,
         name: model.name,
         email: model.email,
-        organization_id: model.organization_id,
         is_deleted: model.is_deleted,
         updated_ad: model.updated_at,
         created_at: model.created_at,

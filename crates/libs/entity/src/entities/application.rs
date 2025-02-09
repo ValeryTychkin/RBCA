@@ -1,14 +1,18 @@
 use sea_orm::entity::{prelude::*, ActiveValue};
-use time::OffsetDateTime;
 use uuid::Uuid;
 
+use time::OffsetDateTime;
+
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "organization")]
+#[sea_orm(table_name = "application")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
-    pub display_name: String,
-    #[sea_orm(default_value = false)]
+    #[sea_orm(unique, indexed)]
+    pub name: String,
+    #[sea_orm(column_type = "String(StringLen::N(2048))", default_value = "")]
+    pub description: String,
+    #[sea_orm(default_value = "false")]
     pub is_deleted: bool,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
@@ -24,6 +28,7 @@ impl ActiveModelBehavior for ActiveModel {
         C: ConnectionTrait,
     {
         let mut s = self;
+
         if insert {
             s.id = ActiveValue::set(Uuid::new_v4());
         }

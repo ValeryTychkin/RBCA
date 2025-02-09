@@ -1,9 +1,8 @@
-use orm_addons_lib::prelude::*;
+use orm_util_lib::{prelude::*, LIMIT_DEFAULT, OFFSET_DEFAULT};
 use rocket::form::FromForm;
 use rocket_okapi::JsonSchema;
 use uuid::Uuid;
 
-use orm_addons_lib::{LIMIT_DEFAULT, OFFSET_DEFAULT};
 use util_lib::date::OffsetDateTimeForm;
 
 #[derive(JsonSchema, FromForm, EntityFilterable)]

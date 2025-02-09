@@ -1,4 +1,4 @@
-use orm_addons_lib::{prelude::*, LIMIT_DEFAULT, OFFSET_DEFAULT};
+use orm_util_lib::{prelude::*, LIMIT_DEFAULT, OFFSET_DEFAULT};
 use uuid::Uuid;
 
 use rocket::form::FromForm;

@@ -12,11 +12,13 @@ members = [
   "crates/libs/repository-db",
   "crates/libs/repository-redis",
   "crates/libs/repository-amqp",
-  "crates/libs/orm-addons",
+  "crates/libs/orm-util",
+  "crates/libs/rocket-util",
 
   # Macros
-  "crates/libs/orm-addons/proc",
-  "crates/libs/util/proc",
+  "crates/libs/orm-util/proc-macro",
+  "crates/libs/rocket-util/proc-macro",
+  "crates/libs/util/proc-macro",
 ]
 
 [workspace.dependencies]
@@ -28,7 +30,8 @@ repository-db-lib = { path = "crates/libs/repository-db" }
 repository-redis-lib = { path = "crates/libs/repository-redis" }
 repository-amqp-lib = { path = "crates/libs/repository-amqp" }
 adapter-lib = { path = "crates/libs/adapter" }
-orm-addons-lib = { path = "crates/libs/orm-addons" }
+orm-util-lib = { path = "crates/libs/orm-util" }
+rocket-util-lib = { path = "crates/libs/rocket-util" }
 
 # Cargo libs
 base64 = "0.22"
@@ -83,3 +86,4 @@ redis = { version = "^0.28", features = [
 proc-macro-error = "1"
 lapin = "2.5.0"
 bcrypt = "0.16"
+darling = "0.20.10"

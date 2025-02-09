@@ -1,13 +1,15 @@
 use proc_macro::TokenStream;
 use quote::quote;
+use serde::{Deserialize, Serialize};
 use syn::spanned::Spanned;
 use syn::{parse_macro_input, DeriveInput, Lit, LitStr};
 
-// TODO add filter methods proc macro
 /// Enumeration representing different filter methods that can be applied in an entity filtering context.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 enum FilterMethod {
-    EQ,
-    NE,
+    Eq,
+    Ne,
     Like,
     NotLike,
     In,
@@ -19,57 +21,23 @@ enum FilterMethod {
 }
 
 impl FilterMethod {
-    fn as_str(&self) -> &'static str {
-        match self {
-            FilterMethod::EQ => "eq",
-            FilterMethod::NE => "ne",
-            FilterMethod::Like => "like",
-            FilterMethod::NotLike => "not_like",
-            FilterMethod::In => "is_in",
-            FilterMethod::NotIn => "is_not_in",
-            FilterMethod::Lt => "lt",
-            FilterMethod::Gt => "gt",
-            FilterMethod::Lte => "lte",
-            FilterMethod::Gte => "gte",
-        }
+    fn to_method_name(&self) -> String {
+        let json_name = serde_json::to_string(self).unwrap();
+        // Remove quotes and reutrn "\"eq\"" => "eq"
+        json_name[1..json_name.len() - 1].to_string()
     }
 
     fn default() -> FilterMethod {
-        FilterMethod::EQ
+        FilterMethod::Eq
     }
 
-    fn find(method_name: &str) -> Option<FilterMethod> {
-        if FilterMethod::EQ.as_str() == method_name {
-            return Some(FilterMethod::EQ);
+    fn find(method_name: &str) -> Option<Self> {
+        // Add quotes for correct json parce
+        let method_name = format!("\"{}\"", method_name);
+        match serde_json::from_str::<Self>(method_name.as_str()) {
+            Ok(v) => Some(v),
+            Err(_) => None,
         }
-        if FilterMethod::NE.as_str() == method_name {
-            return Some(FilterMethod::NE);
-        }
-        if FilterMethod::Like.as_str() == method_name {
-            return Some(FilterMethod::Like);
-        }
-        if FilterMethod::NotLike.as_str() == method_name {
-            return Some(FilterMethod::NotLike);
-        }
-        if FilterMethod::In.as_str() == method_name {
-            return Some(FilterMethod::In);
-        }
-        if FilterMethod::NotIn.as_str() == method_name {
-            return Some(FilterMethod::NotIn);
-        }
-        if FilterMethod::Lt.as_str() == method_name {
-            return Some(FilterMethod::Lt);
-        }
-        if FilterMethod::Gt.as_str() == method_name {
-            return Some(FilterMethod::Gt);
-        }
-        if FilterMethod::Lte.as_str() == method_name {
-            return Some(FilterMethod::Lte);
-        }
-        if FilterMethod::Gte.as_str() == method_name {
-            return Some(FilterMethod::Gte);
-        }
-        None
     }
 }
 
@@ -156,7 +124,8 @@ pub fn impl_entity_filterable(input: TokenStream) -> TokenStream {
 
         // If the field is not marked to be ignored, generate filter logic
         if !ignore {
-            let method_ident: proc_macro2::TokenStream = method.as_str().parse().unwrap();
+            let method_ident: proc_macro2::TokenStream =
+                method.to_method_name().as_str().parse().unwrap();
             let mut check_value = quote! {let v = self.#field_ident.to_owned()};
             if is_option {
                 check_value = quote! {let Some(v) = self.#field_ident.to_owned()}
@@ -175,7 +144,7 @@ pub fn impl_entity_filterable(input: TokenStream) -> TokenStream {
 
     // Generate the implementation of the EntityFilterableTrait trait for the struct
     let expanded = quote! {
-        impl orm_addons_lib::prelude::EntityFilterableTrait for #ident {
+        impl orm_util_lib::prelude::EntityFilterableTrait for #ident {
             fn to_condition<E>(&self) -> sea_orm::Condition
             where
                 E: sea_orm::EntityTrait,

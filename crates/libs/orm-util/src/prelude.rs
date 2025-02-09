@@ -1,3 +1,3 @@
 pub mod entity;
 pub use entity::EntityFilterableTrait;
-pub use orm_addons_lib_proc::EntityFilterable;
+pub use orm_util_proc_macro::EntityFilterable;
