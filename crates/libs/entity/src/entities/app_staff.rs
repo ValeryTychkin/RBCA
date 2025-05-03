@@ -1,32 +1,53 @@
 use sea_orm::entity::{prelude::*, ActiveValue};
+use strum_macros::{Display, EnumString, IntoStaticStr};
 use uuid::Uuid;
 
 use time::OffsetDateTime;
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, EnumString, IntoStaticStr, Display,
+)]
 #[sea_orm(
     rs_type = "String",
-    db_type = "Enum",
-    enum_name = "app_staff_permission"
+    db_type = "String(StringLen::N(255))",
+    rename_all = "PascalCase"
 )]
 pub enum AppStaffPermissions {
-    #[sea_orm(string_value = "UpdateApplication")]
     UpdateApplication,
-    #[sea_orm(string_value = "ReadApplication")]
     ReadApplication,
-    #[sea_orm(string_value = "DeleteApplication")]
     DeleteApplication,
 
-    #[sea_orm(string_value = "CreateKey")]
     CreateKey,
-    #[sea_orm(string_value = "ReadKey")]
     ReadKey,
-    #[sea_orm(string_value = "ReadKeyDetail")]
     ReadKeyDetail,
-    #[sea_orm(string_value = "UpdateKey")]
     UpdateKey,
-    #[sea_orm(string_value = "DeleteKey")]
     DeleteKey,
+}
+
+impl AppStaffPermissions {
+    pub fn get_all() -> Vec<Self> {
+        let mut result = Self::get_all_application();
+        result.append(&mut Self::get_all_key());
+        result
+    }
+
+    pub fn get_all_application() -> Vec<Self> {
+        vec![
+            Self::UpdateApplication,
+            Self::ReadApplication,
+            Self::DeleteApplication,
+        ]
+    }
+
+    pub fn get_all_key() -> Vec<Self> {
+        vec![
+            Self::CreateKey,
+            Self::ReadKey,
+            Self::ReadKeyDetail,
+            Self::UpdateKey,
+            Self::DeleteKey,
+        ]
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
@@ -34,18 +55,35 @@ pub enum AppStaffPermissions {
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
-    #[sea_orm(indexed)]
     pub application_id: Uuid,
-    #[sea_orm(indexed)]
     pub user_id: Uuid,
     pub permissions: Vec<AppStaffPermissions>,
-    #[sea_orm(default_value = "false")]
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(
+        belongs_to = "super::application::Entity",
+        from = "Column::ApplicationId",
+        to = "super::application::Column::Id"
+    )]
+    Application,
+    #[sea_orm(
+        belongs_to = "super::user::Entity",
+        from = "Column::UserId",
+        to = "super::user::Column::Id"
+    )]
+    User,
+}
+
+// `Related` trait has to be implemented by hand
+impl Related<super::application::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Application.def()
+    }
+}
 
 #[async_trait::async_trait]
 impl ActiveModelBehavior for ActiveModel {

@@ -15,15 +15,12 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   keydb:
-    image: eqalpha/keydb:latest
-    container_name: rbca-keydb
+    image: valkey/valkey:8
+    container_name: rbca-valkey
     ports:
       - "6379:6379"
     volumes:
       - keydb_data:/data
-      - type: bind
-        source: "./.keydb.conf"
-        target: "/etc/keydb/.keydb.conf"
 
   mq:
     restart: always

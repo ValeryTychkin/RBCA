@@ -38,6 +38,7 @@ pub struct Oauth2TokenClaims {
     pub oauth_token_type: Oauth2TokenType,
 }
 
+#[derive(Debug)]
 pub enum ValidError {
     Invalid,
     TokenNotYetActive,

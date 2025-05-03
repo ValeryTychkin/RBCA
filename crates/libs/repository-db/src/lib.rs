@@ -1,12 +1,13 @@
+pub mod app_staff;
+pub mod application;
 pub mod user;
 
-use std::u64;
-
 use async_trait::async_trait;
-use orm_util_lib::{LIMIT_DEFAULT, LIMIT_MAX, LIMIT_MIN, OFFSET_DEFAULT};
+use orm_util_lib::{get_limit, get_offset};
 use sea_orm::{
-    ActiveModelTrait, Condition, DatabaseConnection, DbErr, EntityTrait, IntoActiveModel,
-    PaginatorTrait, PrimaryKeyTrait, QueryFilter, QuerySelect,
+    sea_query::IntoValueTuple, ActiveModelTrait, ColumnTrait, Condition, DatabaseConnection, DbErr,
+    EntityTrait, IntoActiveModel, Iterable, PaginatorTrait, PrimaryKeyToColumn, PrimaryKeyTrait,
+    QueryFilter, QuerySelect,
 };
 
 /// A trait that defines common repository methods for working with entities.
@@ -18,6 +19,7 @@ use sea_orm::{
 pub trait Repository<E>: Send + Sync
 where
     E: EntityTrait + Send + Sync,
+    E::PrimaryKey: PrimaryKeyTrait,
     E::Model: Send + Sync + IntoActiveModel<E::ActiveModel>,
     E::ActiveModel: ActiveModelTrait<Entity = E> + Send + Sync + From<E::Model>,
 {
@@ -49,75 +51,27 @@ where
         &self,
         filter: Option<Condition>,
         offset: Option<u64>,
-        limit: Option<u64>,
-        with_total_count: bool,
-    ) -> Result<(Vec<E::Model>, u64, u64, u64), DbErr> {
-        // Check optional offset on max/min value or None (if None set default)
-        let opt_offset = offset;
-        let offset: u64;
-        match opt_offset {
-            Some(v) => {
-                offset = v;
-            }
-            None => {
-                offset = OFFSET_DEFAULT;
-            }
-        }
-
-        // Check optional limit on max/min value or None (if None set default)
-        let opt_limit = limit;
-        let limit: u64;
-        match opt_limit {
-            Some(v) => {
-                if v < LIMIT_MIN {
-                    limit = LIMIT_MIN;
-                } else if v > LIMIT_MAX {
-                    limit = LIMIT_MAX;
-                } else {
-                    limit = v;
-                }
-            }
-            None => {
-                limit = LIMIT_DEFAULT;
-            }
-        }
-
-        // Try to unwrap filter or set withoute filter (all)
-        let filter: Condition = filter.unwrap_or(Condition::all());
+        limit: Option<i64>,
+    ) -> Result<(Vec<E::Model>, i64, u64, u64), DbErr>
+    where
+        Self: builder::QueryBuilder<E>,
+    {
+        let limit = get_limit(limit);
+        let offset = get_offset(offset);
 
         let db = self.get_db().await;
 
-        let models_res = E::find()
-            .filter(filter.to_owned())
-            .offset(offset)
-            .limit(limit)
-            .all(db)
-            .await;
+        let models = match Self::select(filter.to_owned(), limit, offset).all(db).await {
+            Ok(v) => v,
+            Err(e) => return Err(e),
+        };
 
-        match models_res {
-            Ok(models) => {
-                let mut total_count = 0;
-                if with_total_count {
-                    let total_count_res = self.get_total_count(Some(filter)).await;
-                    match total_count_res {
-                        Ok(v) => {
-                            total_count = v;
-                        }
-                        Err(e) => {
-                            return Err(e);
-                        }
-                    }
-                }
-                Ok((models, offset, limit, total_count))
-            }
-            Err(e) => Err(e),
-        }
-    }
+        let total_count = match Self::select(filter, -1, 0).count(db).await {
+            Ok(v) => v,
+            Err(e) => return Err(e),
+        };
 
-    async fn get_total_count(&self, filter: Option<Condition>) -> Result<u64, DbErr> {
-        let filter: Condition = filter.unwrap_or(Condition::all());
-        let db = self.get_db().await;
-        E::find().filter(filter).count(db).await
+        Ok((models, limit, offset, total_count))
     }
 
     async fn is_exist(&self, filter: Option<Condition>) -> Result<bool, DbErr> {
@@ -141,11 +95,76 @@ where
         E::find().filter(filter).one(db).await
     }
 
-    async fn get_by_id<Pk>(&self, id: Pk) -> Result<Option<E::Model>, DbErr>
+    async fn get_by_id<Pk>(&self, ids: Pk) -> Result<Option<E::Model>, DbErr>
     where
         Pk: Into<<E::PrimaryKey as PrimaryKeyTrait>::ValueType> + Send + Sync + Clone,
     {
         let db = self.get_db().await;
-        E::find_by_id(id).one(db).await
+        E::find_by_id(ids).one(db).await
+    }
+
+    async fn update(&self, active_model: E::ActiveModel) -> Result<E::Model, DbErr> {
+        let db = self.get_db().await;
+        active_model.update(db).await
+    }
+
+    async fn delete_by_id<Pk>(&self, ids: Pk) -> Result<(), DbErr>
+    where
+        Pk: Into<<E::PrimaryKey as PrimaryKeyTrait>::ValueType> + Send + Sync + Clone,
+    {
+        let mut filter: Condition = Condition::all();
+
+        // Collect all primary keys into a Vec before awaiting to ensure they are Send.
+        // This prevents issues where the iterator itself is not Send and might be moved across threads
+        // when the async function is suspended at an await point.
+        let keys: Vec<_> = E::PrimaryKey::iter().collect();
+        let mut keys = keys.into_iter();
+
+        // Add filter by ids
+        for id in ids.into().into_value_tuple() {
+            if let Some(key) = keys.next() {
+                let col = key.into_column();
+                filter = filter.add(col.eq(id));
+            } else {
+                panic!("primary key arity mismatch");
+            }
+        }
+        if keys.next().is_some() {
+            panic!("primary key arity mismatch");
+        }
+        self.delete(filter).await
+    }
+
+    async fn delete(&self, filter: Condition) -> Result<(), DbErr> {
+        let db = self.get_db().await;
+        match E::delete_many().filter(filter).exec(db).await {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
+        }
+    }
+}
+
+mod builder {
+    use orm_util_lib::{get_limit, get_offset};
+    use sea_orm::{
+        sea_query::IntoValueTuple, ActiveModelTrait, ColumnTrait, Condition, DatabaseConnection,
+        DbBackend, DbErr, EntityTrait, IntoActiveModel, Iterable, PaginatorTrait,
+        PrimaryKeyToColumn, PrimaryKeyTrait, QueryFilter, QuerySelect, QueryTrait, Select,
+    };
+
+    pub(crate) trait QueryBuilder<E>
+    where
+        E: EntityTrait,
+    {
+        fn select(filter: Option<Condition>, limit: i64, offset: u64) -> Select<E> {
+            // Try to unwrap filter or set withoute filter (all)
+            let filter: Condition = filter.unwrap_or(Condition::all());
+
+            let mut result = E::find().filter(filter.to_owned()).offset(offset);
+            if limit >= 0 {
+                result = result.limit(limit as u64);
+            }
+            result
+        }
     }
 }

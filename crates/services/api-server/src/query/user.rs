@@ -17,10 +17,12 @@ pub struct User {
     pub created_start: Option<OffsetDateTimeForm>,
     #[filter(rule = "lt", value_prepare = "v.to_time()", column = "created_at")]
     pub created_end: Option<OffsetDateTimeForm>,
+    #[serde(skip)]
+    pub is_staff: Option<bool>,
     #[filter(ignore)]
     #[field(default = Some(OFFSET_DEFAULT))]
     pub offset: Option<u64>,
     #[filter(ignore)]
     #[field(default = Some(LIMIT_DEFAULT))]
-    pub limit: Option<u64>,
+    pub limit: Option<i64>,
 }

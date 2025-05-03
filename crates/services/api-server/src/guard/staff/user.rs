@@ -23,6 +23,7 @@ pub enum UserStaffPermission {
     DeleteUser,
 }
 
+#[derive(Debug)]
 pub struct UserStaff {
     pub user: User,
 }
@@ -48,7 +49,7 @@ impl<'r> FromRequest<'r> for UserStaff {
         if user.claims.is_staff {
             return Outcome::Success(Self { user });
         }
-        Outcome::Error((Status::Unauthorized, GuardError::MissingUser))
+        Outcome::Error((Status::Forbidden, GuardError::MissingUser))
     }
 }
 

@@ -8,17 +8,12 @@ use time::OffsetDateTime;
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
-    #[sea_orm(unique, indexed)]
     pub value: String,
     pub activated_at: Option<OffsetDateTime>,
     pub lifetime: u32,
-    #[sea_orm(default_value = "false")]
     pub is_bunned: bool,
-    #[sea_orm(indexed)]
     pub application_id: Uuid,
-    #[sea_orm(indexed)]
     pub user_id: Uuid,
-    #[sea_orm(indexed)]
     pub created_by_user_id: Uuid,
     #[sea_orm(default_value = "false")]
     pub is_deleted: bool,
@@ -43,6 +38,12 @@ impl Model {
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
+    #[sea_orm(
+        belongs_to = "super::application::Entity",
+        from = "Column::ApplicationId",
+        to = "super::application::Column::Id"
+    )]
+    Application,
     #[sea_orm(
         belongs_to = "super::user::Entity",
         from = "Column::UserId",

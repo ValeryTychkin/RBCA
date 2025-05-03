@@ -1,40 +1,38 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_valid::Validate;
-use time::{serde::rfc3339, Date, OffsetDateTime};
+use time::{serde::rfc3339, OffsetDateTime};
 use util_lib::{
-    date::schema::{date_rfc3339, date_time_rfc3339},
-    string::validate::string_1_255,
+    date::schema::date_time_rfc3339,
+    string::validate::{string_0_2048, string_1_255},
 };
 use uuid::Uuid;
 
 use super::Pagination;
 
 #[derive(Deserialize, Serialize, JsonSchema, Validate)]
-pub struct CreateUser {
+pub struct CreateApplication {
     #[serde(deserialize_with = "string_1_255")]
     pub name: String,
-    #[serde(deserialize_with = "string_1_255")]
-    pub email: String,
-    #[serde(skip)]
-    pub is_staff: Option<bool>,
-    #[schemars(schema_with = "date_rfc3339")]
-    pub birthday: Date,
+    #[serde(deserialize_with = "string_0_2048", default)]
+    pub description: String,
 }
 
 #[derive(Deserialize, Serialize, JsonSchema, Validate)]
-pub struct UpdateUser {
+pub struct UpdateApplication {
     #[serde(deserialize_with = "string_1_255")]
     pub name: String,
-    #[schemars(schema_with = "date_rfc3339")]
-    pub birthday: Date,
+    #[serde(deserialize_with = "string_0_2048", default)]
+    pub description: String,
 }
 
-#[derive(Deserialize, Serialize, JsonSchema)]
-pub struct User {
+#[derive(Deserialize, Serialize, JsonSchema, Validate)]
+pub struct Application {
     pub id: Uuid,
+    #[serde(deserialize_with = "string_1_255")]
     pub name: String,
-    pub email: String,
+    #[serde(deserialize_with = "string_0_2048", default)]
+    pub description: String,
     #[serde(with = "rfc3339")]
     #[schemars(schema_with = "date_time_rfc3339")]
     pub created_at: OffsetDateTime,
@@ -44,8 +42,8 @@ pub struct User {
 }
 
 #[derive(Deserialize, Serialize, JsonSchema)]
-pub struct UserList {
-    pub users: Vec<User>,
+pub struct ApplicationList {
+    pub applications: Vec<Application>,
     #[serde(flatten)]
     pub pagination: Pagination,
 }

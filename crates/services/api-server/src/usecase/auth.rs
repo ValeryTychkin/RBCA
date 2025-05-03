@@ -1,19 +1,24 @@
-use crate::schema::{auth as auth_schema, base as base_schema, user as user_schema};
+use super::user as user_usecase;
+use crate::schema::{auth as auth_schema, user as user_schema};
 use repository_db_lib::user::{user_entity, Repository, User as UserRep};
 use repository_redis_lib as redis_repository;
-use sea_orm::{ActiveValue, ColumnTrait, Condition};
+use sea_orm::{ColumnTrait, Condition};
 use util_lib::{
     auth::{self, jwt as auth_jwt},
     jwt::encode as jwt_encode,
 };
 
 pub enum ErrorLogin {
-    Email,
-    Password,
+    UserNotFound,
+    InvalidPassword,
+}
+
+pub enum ErrorRegister {
+    EmailAllreadyExist,
 }
 
 pub async fn login(
-    user_login: auth_schema::Login,
+    user_login: &auth_schema::Login,
 ) -> Result<auth_jwt::Oauth2LoginResult, ErrorLogin> {
     // Get filter
     let filter = Condition::all().add(user_entity::Column::Email.eq(user_login.email.to_owned()));
@@ -23,16 +28,16 @@ pub async fn login(
     match rep.get_one(Some(filter)).await.unwrap() {
         Some(v) => user = v,
         None => {
-            return Err(ErrorLogin::Email);
+            return Err(ErrorLogin::UserNotFound);
         }
     }
     // Check User password
     if !user.is_valid_password(user_login.password.as_str()) {
-        return Err(ErrorLogin::Password);
+        return Err(ErrorLogin::InvalidPassword);
     }
     // Get access and refresh user claims
     let (access_user_claims, refresh_user_claims) =
-        auth_schema::SelfUserTokenClaims::acc_and_ref_from_model(&user);
+        auth_schema::SelfUserTokenClaims::access_and_refresh_from_model(&user);
     // Save user claims in cache
     save_token(&access_user_claims).await;
     save_token(&refresh_user_claims).await;
@@ -45,11 +50,11 @@ pub async fn login(
     })
 }
 
-pub async fn logout(user_claims: auth_schema::SelfUserTokenClaims) {
-    del_acc_ref_tokens(&user_claims).await;
+pub async fn logout(user_claims: &auth_schema::SelfUserTokenClaims) {
+    del_acc_ref_tokens(user_claims).await;
 }
 
-pub async fn introspect(token_intro: auth_jwt::IntrospectInput) -> auth_jwt::IntrospectResult {
+pub async fn introspect(token_intro: &auth_jwt::IntrospectInput) -> auth_jwt::IntrospectResult {
     // Try to deserialize claims from jwt
     let user_claims: auth_schema::SelfUserTokenClaims;
     match auth_schema::SelfUserTokenClaims::from_jwt(&token_intro.token) {
@@ -92,35 +97,24 @@ pub async fn introspect(token_intro: auth_jwt::IntrospectInput) -> auth_jwt::Int
 }
 
 pub async fn registration(
-    user_reg: auth_schema::Register,
-) -> Result<user_schema::User, base_schema::ErrorResult> {
-    // Check if email allready exist
-    let filter = Condition::all().add(user_entity::Column::Email.eq(user_reg.email.to_owned()));
-    let rep = UserRep::new().await;
-    if let Some(_) = rep.get_one(Some(filter)).await.unwrap() {
-        return Err(base_schema::ErrorResult {
-            err_msg: "email allready used".to_string(),
-            err_detail: None,
-        });
+    user_reg: &auth_schema::Register,
+) -> Result<user_schema::User, ErrorRegister> {
+    match user_usecase::create(
+        &user_schema::CreateUser {
+            name: user_reg.name.to_owned(),
+            email: user_reg.email.to_owned(),
+            is_staff: Some(false),
+            birthday: user_reg.birthday,
+        },
+        Some(user_reg.password.as_str()),
+    )
+    .await
+    {
+        Ok(v) => Ok(v),
+        Err(e) => match e {
+            user_usecase::ErrorCreate::EmailAllreadyExist => Err(ErrorRegister::EmailAllreadyExist),
+        },
     }
-    // Save new user
-    let active_model = user_entity::ActiveModel {
-        name: ActiveValue::Set(user_reg.name),
-        email: ActiveValue::Set(user_reg.email),
-        password: ActiveValue::Set(user_reg.password),
-        birthday: ActiveValue::Set(user_reg.birthday),
-        ..Default::default()
-    };
-    // Convert Model into Schema
-    let model = rep.create(active_model).await.unwrap();
-    Ok(user_schema::User {
-        id: model.id,
-        name: model.name,
-        email: model.email,
-        is_deleted: model.is_deleted,
-        updated_ad: model.updated_at,
-        created_at: model.created_at,
-    })
 }
 
 pub async fn save_token(token_claims: &auth_schema::SelfUserTokenClaims) {

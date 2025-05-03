@@ -19,3 +19,6 @@ chrono = { workspace = true }
 time = { workspace = true }
 adapter-lib = { workspace = true }
 repository-amqp-lib = { workspace = true }
+rand = { workspace = true }
+strum_macros = { workspace = true }
+strum = { workspace = true }

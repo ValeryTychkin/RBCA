@@ -10,13 +10,13 @@ use rocket_okapi::{
 };
 use util_lib::auth::jwt as auth_jwt;
 
-use crate::{schema::auth::SelfUserTokenClaims, usecase::auth as auth_usecase};
+use crate::{schema::auth as auth_schema, usecase::auth as auth_usecase};
 
 use super::GuardError;
 
 #[derive(Debug)]
 pub struct User {
-    pub claims: SelfUserTokenClaims,
+    pub claims: auth_schema::SelfUserTokenClaims,
 }
 
 #[async_trait]
@@ -27,7 +27,7 @@ impl<'r> FromRequest<'r> for User {
         if let Some(header_value) = request.headers().get_one("authorization") {
             if let Ok(token_str) = auth_jwt::extract_bearer_token(header_value) {
                 // Parse the token into a SelfUserTokenClaims object
-                if let Ok(user_claims) = SelfUserTokenClaims::from_jwt(&token_str) {
+                if let Ok(user_claims) = auth_schema::SelfUserTokenClaims::from_jwt(&token_str) {
                     // Ensure the OAuth2 claims are valid (access type)
                     if user_claims.oauth2_claims.is_access() {
                         if let Ok(_) = user_claims.oauth2_claims.validate_date_range() {

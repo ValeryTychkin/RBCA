@@ -8,7 +8,7 @@ rest_api_r = "rest_api --release"
 w_rest_api = "watch -x rest_api"
 w_rest_api_r = "watch -x rest_api_r"
 # Migration
-gen_migration = "run --target-dir ./crates/services/migration -p migration -- generate"
+gen_migration = "run -p migration -- generate"
 
 [resolver]
 cargo-watch = "8.5" # Hot reload
@@ -19,3 +19,4 @@ JWT_SECRET = "secret"
 DATABASE_URL = "postgresql://root:root@localhost:5432/api"
 DATABASE_DEBUG = "1"
 RABBIT_URL = "amqp://root:root@mq:5672/api"
+MIGRATION_DIR = "./crates/services/migration/"

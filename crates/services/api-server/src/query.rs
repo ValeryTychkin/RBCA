@@ -1,2 +1,3 @@
-pub mod organization;
+pub mod application;
 pub mod user;
+

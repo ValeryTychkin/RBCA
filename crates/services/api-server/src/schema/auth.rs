@@ -44,7 +44,7 @@ impl SelfUserTokenClaims {
     pub fn from_model(user: &user_entity::Model, claims: Oauth2TokenClaims) -> Self {
         let mut staff_permissions: Vec<String> = vec![];
         for permission in &user.staff_permissions {
-            staff_permissions.push(serde_json::to_string(permission).unwrap());
+            staff_permissions.push(permission.to_string());
         }
         Self {
             id: user.id,
@@ -54,7 +54,7 @@ impl SelfUserTokenClaims {
         }
     }
 
-    pub fn acc_and_ref_from_model(user: &user_entity::Model) -> (Self, Self) {
+    pub fn access_and_refresh_from_model(user: &user_entity::Model) -> (Self, Self) {
         let (access_claims, refresh_claims) = Oauth2TokenClaims::new_claims();
 
         let access_user_claims = Self::from_model(user, access_claims);

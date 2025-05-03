@@ -30,7 +30,7 @@ use proc_macro::TokenStream;
 ///     pub offset: Option<u64>,
 ///     #[filter(ignore)]
 ///     #[field(default = Some(LIMIT_DEFAULT))]
-///     pub limit: Option<u64>,
+///     pub limit: Option<i64>,
 /// }
 ///
 /// // These can be used with any model that contains the same fields:

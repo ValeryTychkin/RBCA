@@ -26,6 +26,7 @@ members = [
 entity-lib = { path = "crates/libs/entity" }
 migration = { path = "crates/services/migration" }
 util-lib = { path = "crates/libs/util" }
+db-model-lib = { path = "crates/libs/db-model" }
 repository-db-lib = { path = "crates/libs/repository-db" }
 repository-redis-lib = { path = "crates/libs/repository-redis" }
 repository-amqp-lib = { path = "crates/libs/repository-amqp" }
@@ -35,14 +36,14 @@ rocket-util-lib = { path = "crates/libs/rocket-util" }
 
 # Cargo libs
 base64 = "0.22"
-sea-orm = { version = "1.1.3", features = [
+sea-orm = { version = "1.1", features = [
   "sqlx-postgres",
   "runtime-tokio-rustls",
   "macros",
-  "postgres-array",
   "debug-print",
   "with-uuid",
   "with-json",
+  "json-array",
   "postgres-array",
 ] }
 sea-orm-migration = "1.1"
@@ -85,5 +86,8 @@ redis = { version = "^0.28", features = [
 ] }
 proc-macro-error = "1"
 lapin = "2.5.0"
-bcrypt = "0.16"
+bcrypt = "0.17"
 darling = "0.20.10"
+rand = "0.9.0"
+strum_macros = "0.27"
+strum = "0.27"

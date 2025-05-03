@@ -1,17 +1,10 @@
 mod enum_tool;
-mod guard_permission;
 
 extern crate proc_macro;
 use proc_macro::TokenStream;
 use proc_macro_error::*;
 
 use enum_tool::bool as enum_bool;
-use guard_permission::impl_guard_permission;
-
-#[proc_macro_attribute]
-pub fn guard_permission(attr: TokenStream, item: TokenStream) -> TokenStream {
-    impl_guard_permission(attr, item)
-}
 
 /*
 `BoolEnum` is a derive macro to create ergonomic boolean enums with less boilerplate.
