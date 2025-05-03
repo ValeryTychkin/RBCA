@@ -49,3 +49,11 @@ pub struct UserList {
     #[serde(flatten)]
     pub pagination: Pagination,
 }
+
+#[derive(Deserialize, Serialize, JsonSchema, Validate)]
+pub struct UpdateUserPassword {
+    #[serde(deserialize_with = "string_1_255")]
+    pub old_password: String,
+    #[serde(deserialize_with = "string_1_255")]
+    pub new_password: String,
+}

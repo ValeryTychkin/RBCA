@@ -75,10 +75,6 @@ pub async fn introspect(token_intro: Form<IntrospectInput>) -> Json<IntrospectRe
     Json(auth_usecase::introspect(&token_intro.into_inner()).await)
 }
 
-// TODO: add change password
-
-// TODO: send code for reset password
-
 pub fn get_routes_and_docs(settings: &OpenApiSettings) -> (Vec<rocket::Route>, OpenApi) {
     merdge_mulit_routes![settings, [register, login, logout, introspect]]
 }

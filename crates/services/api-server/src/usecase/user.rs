@@ -102,6 +102,35 @@ pub async fn update(
     Ok(model_into_schema(&user_model))
 }
 
+pub enum ErrorUpdatePassword {
+    UserNotFound,
+    WrongOldPassword,
+}
+
+pub async fn update_password(
+    user_id: Uuid,
+    passwords: &user_schema::UpdateUserPassword,
+) -> Result<user_schema::User, ErrorUpdatePassword> {
+    let rep = UserRep::new().await;
+    let filter = Condition::all().add(user_entity::Column::Id.eq(user_id));
+
+    // Try to get user by id
+    let user_model: user_entity::Model = match rep.get_one(Some(filter)).await.unwrap() {
+        Some(v) => v,
+        None => return Err(ErrorUpdatePassword::UserNotFound),
+    };
+
+    if !user_model.is_valid_password(&passwords.old_password) {
+        return Err(ErrorUpdatePassword::WrongOldPassword);
+    }
+    // Convert user model into active model
+    let mut user_model: user_entity::ActiveModel = user_model.into();
+    user_model.password = Set(passwords.new_password.to_owned());
+    // Convert Model into Schema
+    let user_model = rep.update(user_model).await.unwrap();
+    Ok(model_into_schema(&user_model))
+}
+
 pub fn model_into_schema(model: &user_entity::Model) -> user_schema::User {
     user_schema::User {
         id: model.id.to_owned(),

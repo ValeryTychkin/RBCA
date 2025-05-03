@@ -37,7 +37,7 @@ pub async fn create(
     };
     let application_model = rep.create(application_model).await.unwrap();
 
-    // TODO Move to app_staff usecase
+    // TODO: Move to app_staff usecase
     let app_staff_rep = AppStaffRep::new().await;
     let app_staff_model = app_staff_entity::ActiveModel {
         application_id: Set(application_model.id.to_owned()),
@@ -49,12 +49,12 @@ pub async fn create(
     match app_staff_rep.create(app_staff_model).await {
         Ok(v) => v,
         Err(_) => {
-            rep.delete_by_id(application_model.id).await;
+            let _ = rep.delete_by_id(application_model.id).await;
             return Err(ErrorCreate::AddCreatorIntoNewApplication);
         }
     };
 
-    // TODO new application
+    // TODO: new application
     Ok(model_into_schema(&application_model))
 }
 
