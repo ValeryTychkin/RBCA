@@ -1,11 +1,8 @@
 use crate::{
-    guard::{
-        staff::user::{UserStaff as GuardUserStaff, UserStaffPermission as GuardStaffPermission},
-        GuardError,
-    },
+    guard::{staff::user::UserStaff as GuardUserStaff, GuardError},
     merdge_mulit_routes,
     query::application as application_query,
-    schema::{self, application as application_schema},
+    schema::{self, application as application_schema, user as user_schema},
     usecase::application as application_usecase,
 };
 use rocket::{http::Status, serde::json::Json};
@@ -15,7 +12,7 @@ use rocket_okapi::{
 use rocket_util_lib::guard_permission;
 
 #[openapi(tag = "Application")]
-#[guard_permission(error_ty = GuardError, perm_error = MissingPermission, all_perms = (GuardStaffPermission::CreateApplication))]
+#[guard_permission(error_ty = GuardError, perm_error = MissingPermission, all_perms = (user_schema::StaffPermission::CreateApplication))]
 #[post("/", data = "<new_application>")]
 pub async fn create(
     guard: GuardUserStaff,

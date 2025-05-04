@@ -237,6 +237,8 @@ dependencies = [
  "serde_json",
  "serde_valid",
  "serde_with",
+ "strum 0.27.1",
+ "strum_macros",
  "time",
  "tokio",
  "util-lib",

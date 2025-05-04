@@ -1,3 +1,6 @@
+use std::str::FromStr;
+
+use super::user::StaffPermission;
 use repository_db_lib::user::user_entity;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -20,7 +23,8 @@ pub struct Login {
 pub struct SelfUserTokenClaims {
     pub id: Uuid,
     pub is_staff: bool,
-    pub staff_permissions: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub permissions: Option<Vec<StaffPermission>>,
     #[serde(flatten)]
     pub oauth2_claims: Oauth2TokenClaims,
 }
@@ -42,14 +46,18 @@ impl SelfUserTokenClaims {
     }
 
     pub fn from_model(user: &user_entity::Model, claims: Oauth2TokenClaims) -> Self {
-        let mut staff_permissions: Vec<String> = vec![];
+        let mut staff_permissions = Vec::<StaffPermission>::new();
         for permission in &user.staff_permissions {
-            staff_permissions.push(permission.to_string());
+            staff_permissions.push(StaffPermission::from_str(&permission.to_string()).unwrap());
         }
+        let permissions = match user.is_staff {
+            true => Some(staff_permissions),
+            false => None,
+        };
         Self {
             id: user.id,
             is_staff: user.is_staff,
-            staff_permissions,
+            permissions,
             oauth2_claims: claims,
         }
     }

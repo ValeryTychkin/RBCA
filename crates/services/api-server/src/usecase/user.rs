@@ -1,7 +1,4 @@
-use crate::{
-    query::user as user_query,
-    schema::{user as user_schema, Pagination},
-};
+use crate::{query::user as user_query, schema::user as user_schema};
 use orm_util_lib::prelude::EntityFilterableTrait;
 use repository_db_lib::{
     user::{user_entity, User as UserRep},
@@ -31,19 +28,7 @@ pub async fn get_all(query_filter: &user_query::User) -> user_schema::UserList {
         )
         .await
         .unwrap();
-    // Convert Models into Schemes
-    let mut users: Vec<user_schema::User> = vec![];
-    for user_model in user_models {
-        users.push(model_into_schema(&user_model));
-    }
-    user_schema::UserList {
-        users,
-        pagination: Pagination {
-            limit,
-            offset,
-            total: total_count,
-        },
-    }
+    user_schema::UserList::from_models(&user_models, limit, offset, total_count)
 }
 
 pub async fn create(
@@ -73,7 +58,7 @@ pub async fn create(
     };
     // Convert Model into Schema
     let user_model = rep.create(user_model).await.unwrap();
-    Ok(model_into_schema(&user_model))
+    Ok(user_schema::User::from_model(&user_model))
 }
 
 pub async fn update(
@@ -99,7 +84,7 @@ pub async fn update(
 
     // Convert Model into Schema
     let user_model = rep.update(user_model).await.unwrap();
-    Ok(model_into_schema(&user_model))
+    Ok(user_schema::User::from_model(&user_model))
 }
 
 pub enum ErrorUpdatePassword {
@@ -128,15 +113,5 @@ pub async fn update_password(
     user_model.password = Set(passwords.new_password.to_owned());
     // Convert Model into Schema
     let user_model = rep.update(user_model).await.unwrap();
-    Ok(model_into_schema(&user_model))
-}
-
-pub fn model_into_schema(model: &user_entity::Model) -> user_schema::User {
-    user_schema::User {
-        id: model.id.to_owned(),
-        name: model.name.to_owned(),
-        email: model.email.to_owned(),
-        updated_at: model.updated_at.to_owned(),
-        created_at: model.created_at.to_owned(),
-    }
+    Ok(user_schema::User::from_model(&user_model))
 }

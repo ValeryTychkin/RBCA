@@ -1,7 +1,7 @@
 use crate::{
     guard::user::{self as user_guard, User},
     query::application as application_query,
-    schema::{application as application_schema, Pagination},
+    schema::application as application_schema,
 };
 use orm_util_lib::prelude::EntityFilterableTrait;
 use repository_db_lib::{
@@ -10,6 +10,7 @@ use repository_db_lib::{
     Repository,
 };
 use sea_orm::{ColumnTrait, Condition, Set};
+use uuid::Uuid;
 
 pub enum ErrorCreate {
     ApplicationNameAllreadyExist,
@@ -37,25 +38,21 @@ pub async fn create(
     };
     let application_model = rep.create(application_model).await.unwrap();
 
-    // TODO: Move to app_staff usecase
-    let app_staff_rep = AppStaffRep::new().await;
-    let app_staff_model = app_staff_entity::ActiveModel {
-        application_id: Set(application_model.id.to_owned()),
-        user_id: Set(creator.claims.id.to_owned()),
-        permissions: Set(app_staff_entity::AppStaffPermissions::get_all()),
-        ..Default::default()
-    };
+    if add_staff(
+        application_model.id.to_owned(),
+        creator.claims.id.to_owned(),
+        app_staff_entity::AppStaffPermissions::get_all(),
+    )
+    .await
+    .is_err()
+    {
+        let _ = rep.delete_by_id(application_model.id).await;
+        return Err(ErrorCreate::AddCreatorIntoNewApplication);
+    }
 
-    match app_staff_rep.create(app_staff_model).await {
-        Ok(v) => v,
-        Err(_) => {
-            let _ = rep.delete_by_id(application_model.id).await;
-            return Err(ErrorCreate::AddCreatorIntoNewApplication);
-        }
-    };
-
-    // TODO: new application
-    Ok(model_into_schema(&application_model))
+    Ok(application_schema::Application::from_model(
+        &application_model,
+    ))
 }
 
 pub async fn get_all(
@@ -77,27 +74,33 @@ pub async fn get_all(
         .get_multiple_with_app_staff(Some(filter), query_filter.offset, query_filter.limit)
         .await
         .unwrap();
-    // Convert Models into Schemes
-    let mut applications = Vec::<application_schema::Application>::new();
-    for app_model in app_models.iter() {
-        applications.push(model_into_schema(app_model));
-    }
-    application_schema::ApplicationList {
-        applications,
-        pagination: Pagination {
-            limit,
-            offset,
-            total: total_count,
-        },
-    }
+
+    application_schema::ApplicationList::from_models(&app_models, limit, offset, total_count)
 }
 
-pub fn model_into_schema(model: &application_entity::Model) -> application_schema::Application {
-    application_schema::Application {
-        id: model.id.to_owned(),
-        name: model.name.to_owned(),
-        description: model.description.to_owned(),
-        updated_at: model.updated_at.to_owned(),
-        created_at: model.created_at.to_owned(),
-    }
+pub enum ErrorAddStaff {
+    ErrorCreate,
+}
+
+async fn add_staff(
+    application_id: Uuid,
+    user_id: Uuid,
+    permissions: Vec<app_staff_entity::AppStaffPermissions>,
+) -> Result<application_schema::ApplicationStaff, ErrorAddStaff> {
+    let app_staff_rep = AppStaffRep::new().await;
+    let app_staff_model = app_staff_entity::ActiveModel {
+        application_id: Set(application_id),
+        user_id: Set(user_id),
+        permissions: Set(permissions),
+        ..Default::default()
+    };
+
+    let app_staff_model = match app_staff_rep.create(app_staff_model).await {
+        Ok(v) => v,
+        Err(_) => return Err(ErrorAddStaff::ErrorCreate),
+    };
+
+    Ok(application_schema::ApplicationStaff::from_model(
+        &app_staff_model,
+    ))
 }

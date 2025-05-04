@@ -8,20 +8,9 @@ use rocket_okapi::{
     okapi::openapi3::{Object, SecurityRequirement, SecurityScheme, SecuritySchemeData},
     request::{OpenApiFromRequest, RequestHeaderInput},
 };
-use serde::{Deserialize, Serialize};
 
 use super::super::{user::User, GuardError};
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum UserStaffPermission {
-    CreateApplication,
-
-    CreateStaffUser,
-    DeleteStaffUser,
-    UpdateStaffUser,
-
-    DeleteUser,
-}
+use crate::schema::user::StaffPermission;
 
 #[derive(Debug)]
 pub struct UserStaff {
@@ -29,14 +18,11 @@ pub struct UserStaff {
 }
 
 impl UserStaff {
-    pub async fn get_permissions(&self) -> Vec<UserStaffPermission> {
-        let mut result: Vec<UserStaffPermission> = Vec::new();
-        for perm_string in self.user.claims.staff_permissions.iter() {
-            if let Ok(perm) = serde_json::from_str(perm_string) {
-                result.push(perm);
-            }
+    pub async fn get_permissions(&self) -> Vec<StaffPermission> {
+        if let Some(permissions) = &self.user.claims.permissions {
+            return permissions.to_owned();
         }
-        result
+        Vec::new()
     }
 }
 

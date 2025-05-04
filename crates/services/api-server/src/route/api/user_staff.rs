@@ -1,8 +1,5 @@
 use crate::{
-    guard::{
-        staff::user::{UserStaff as GuardUserStaff, UserStaffPermission as GuardStaffPermission},
-        GuardError,
-    },
+    guard::{staff::user::UserStaff as GuardUserStaff, GuardError},
     merdge_mulit_routes,
     query::user as user_query,
     schema::{self, user as user_schema},
@@ -26,7 +23,7 @@ pub async fn get_multiple(
 }
 
 #[openapi(tag = "User Staff")]
-#[guard_permission(error_ty = GuardError, perm_error = MissingPermission, all_perms = (GuardStaffPermission::CreateStaffUser))]
+#[guard_permission(error_ty = GuardError, perm_error = MissingPermission, all_perms = (user_schema::StaffPermission::CreateStaffUser))]
 #[post("/", data = "<new_user>")]
 pub async fn create(
     _guard: GuardUserStaff,
@@ -53,7 +50,7 @@ pub async fn create(
 }
 
 #[openapi(tag = "User Staff")]
-#[guard_permission(error_ty = GuardError, perm_error = MissingPermission, all_perms = (GuardStaffPermission::UpdateStaffUser))]
+#[guard_permission(error_ty = GuardError, perm_error = MissingPermission, all_perms = (user_schema::StaffPermission::UpdateStaffUser))]
 #[put("/", data = "<user>")]
 pub async fn self_update(
     guard: GuardUserStaff,
@@ -78,7 +75,7 @@ pub async fn self_update(
 }
 
 #[openapi(tag = "User Staff")]
-#[guard_permission(error_ty = GuardError, perm_error = MissingPermission, all_perms = (GuardStaffPermission::UpdateStaffUser))]
+#[guard_permission(error_ty = GuardError, perm_error = MissingPermission, all_perms = (user_schema::StaffPermission::UpdateStaffUser))]
 #[put("/<user_id>", data = "<user>")]
 pub async fn update(
     _guard: GuardUserStaff,
