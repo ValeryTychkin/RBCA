@@ -2,8 +2,8 @@ use darling::{ast::NestedMeta, Error, FromMeta};
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
-    parse_macro_input, parse_quote, parse_str, Expr, FnArg, Ident, ItemFn, Pat, PatIdent, PatType,
-    Type, TypePath,
+    parse_macro_input, parse_quote, parse_str, Expr, ExprArray, FnArg, Ident, ItemFn, Pat,
+    PatIdent, PatType, Type, TypePath,
 };
 use util_lib::string::snake_to_camel;
 
@@ -17,10 +17,10 @@ struct GuardPermissionArgs {
     guard_arg_name: Ident,
     error_ty: Ident,
     perm_error: Ident,
-    #[darling(multiple)]
-    any_perms: Vec<Expr>,
-    #[darling(multiple)]
-    all_perms: Vec<Expr>,
+    #[darling(default)]
+    any_perms: Option<ExprArray>,
+    #[darling(default)]
+    all_perms: Option<ExprArray>,
 }
 
 pub fn impl_guard_permission(args: TokenStream, item: TokenStream) -> TokenStream {
@@ -53,13 +53,15 @@ pub fn impl_guard_permission(args: TokenStream, item: TokenStream) -> TokenStrea
             }
         };
 
+    let (any_perms, all_perms) = get_perms(&macro_args);
+
     let handle_def = gen_handle_guard_struct(
         &handle_ident,
         &guard_ident,
         &macro_args.error_ty,
         &macro_args.perm_error,
-        &macro_args.any_perms,
-        &macro_args.all_perms,
+        &any_perms,
+        &all_perms,
     );
 
     // Combine the struct definition with the modified function.
@@ -71,6 +73,24 @@ pub fn impl_guard_permission(args: TokenStream, item: TokenStream) -> TokenStrea
     };
 
     output.into()
+}
+
+fn get_perms(guard_perm_args: &GuardPermissionArgs) -> (Vec<Expr>, Vec<Expr>) {
+    let mut any_perms = Vec::<Expr>::new();
+    if guard_perm_args.any_perms.is_some() {
+        for elem in &guard_perm_args.any_perms.as_ref().unwrap().elems {
+            any_perms.push(elem.to_owned());
+        }
+    }
+
+    let mut all_perms = Vec::<Expr>::new();
+    if guard_perm_args.all_perms.is_some() {
+        for elem in &guard_perm_args.all_perms.as_ref().unwrap().elems {
+            all_perms.push(elem.to_owned());
+        }
+    }
+
+    (any_perms, all_perms)
 }
 
 fn update_arg_type(item_fn: &mut ItemFn, arg_ident: &Ident, new_type: &Ident) -> Option<Ident> {

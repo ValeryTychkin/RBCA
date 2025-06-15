@@ -12,7 +12,7 @@ use rocket_okapi::{
 use rocket_util_lib::guard_permission;
 
 #[openapi(tag = "Application")]
-#[guard_permission(error_ty = GuardError, perm_error = MissingPermission, all_perms = (user_schema::StaffPermission::CreateApplication))]
+#[guard_permission(error_ty = GuardError, perm_error = MissingPermission, all_perms = [user_schema::StaffPermission::CreateApplication])]
 #[post("/", data = "<new_application>")]
 pub async fn create(
     guard: GuardUserStaff,

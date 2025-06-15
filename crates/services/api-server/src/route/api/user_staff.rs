@@ -23,7 +23,7 @@ pub async fn get_multiple(
 }
 
 #[openapi(tag = "User Staff")]
-#[guard_permission(error_ty = GuardError, perm_error = MissingPermission, all_perms = (user_schema::StaffPermission::CreateStaffUser))]
+#[guard_permission(error_ty = GuardError, perm_error = MissingPermission, all_perms = [user_schema::StaffPermission::CreateStaffUser])]
 #[post("/", data = "<new_user>")]
 pub async fn create(
     _guard: GuardUserStaff,
@@ -50,7 +50,7 @@ pub async fn create(
 }
 
 #[openapi(tag = "User Staff")]
-#[guard_permission(error_ty = GuardError, perm_error = MissingPermission, all_perms = (user_schema::StaffPermission::UpdateStaffUser))]
+#[guard_permission(error_ty = GuardError, perm_error = MissingPermission, all_perms = [user_schema::StaffPermission::UpdateStaffUser])]
 #[put("/", data = "<user>")]
 pub async fn self_update(
     guard: GuardUserStaff,
@@ -75,7 +75,7 @@ pub async fn self_update(
 }
 
 #[openapi(tag = "User Staff")]
-#[guard_permission(error_ty = GuardError, perm_error = MissingPermission, all_perms = (user_schema::StaffPermission::UpdateStaffUser))]
+#[guard_permission(error_ty = GuardError, perm_error = MissingPermission, all_perms = [user_schema::StaffPermission::UpdateStaffUser])]
 #[put("/<user_id>", data = "<user>")]
 pub async fn update(
     _guard: GuardUserStaff,
