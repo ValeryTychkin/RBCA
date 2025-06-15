@@ -6,8 +6,8 @@ use async_trait::async_trait;
 use orm_util_lib::{get_limit, get_offset};
 use sea_orm::{
     sea_query::IntoValueTuple, ActiveModelTrait, ColumnTrait, Condition, DatabaseConnection, DbErr,
-    EntityTrait, IntoActiveModel, Iterable, PaginatorTrait, PrimaryKeyToColumn, PrimaryKeyTrait,
-    QueryFilter, QuerySelect,
+    EntityTrait, InsertResult, IntoActiveModel, Iterable, PaginatorTrait, PrimaryKeyToColumn,
+    PrimaryKeyTrait, QueryFilter, QuerySelect, TryGetableMany,
 };
 
 /// A trait that defines common repository methods for working with entities.
@@ -74,6 +74,22 @@ where
         Ok((models, limit, offset, total_count))
     }
 
+    async fn get_multiple_flat<T>(
+        &self,
+        filter: Option<Condition>,
+        columns: Vec<<E as EntityTrait>::Column>,
+    ) -> Result<Vec<T>, DbErr>
+    where
+        Self: builder::QueryBuilder<E>,
+        T: TryGetableMany + Send,
+    {
+        let db = self.get_db().await;
+        Self::select_only(filter, columns)
+            .into_tuple()
+            .all(db)
+            .await
+    }
+
     async fn is_exist(&self, filter: Option<Condition>) -> Result<bool, DbErr> {
         let filter: Condition = filter.unwrap_or(Condition::all());
         let db = self.get_db().await;
@@ -86,6 +102,14 @@ where
     async fn create(&self, active_model: E::ActiveModel) -> Result<E::Model, DbErr> {
         let db = self.get_db().await;
         active_model.insert(db).await
+    }
+
+    async fn create_multiple(
+        &self,
+        active_models: Vec<E::ActiveModel>,
+    ) -> Result<InsertResult<E::ActiveModel>, DbErr> {
+        let db = self.get_db().await;
+        E::insert_many(active_models).exec(db).await
     }
 
     async fn get_one(&self, filter: Option<Condition>) -> Result<Option<E::Model>, DbErr> {
@@ -145,12 +169,7 @@ where
 }
 
 mod builder {
-    use orm_util_lib::{get_limit, get_offset};
-    use sea_orm::{
-        sea_query::IntoValueTuple, ActiveModelTrait, ColumnTrait, Condition, DatabaseConnection,
-        DbBackend, DbErr, EntityTrait, IntoActiveModel, Iterable, PaginatorTrait,
-        PrimaryKeyToColumn, PrimaryKeyTrait, QueryFilter, QuerySelect, QueryTrait, Select,
-    };
+    use sea_orm::{ColumnTrait, Condition, EntityTrait, QueryFilter, QuerySelect, Select};
 
     pub(crate) trait QueryBuilder<E>
     where
@@ -160,11 +179,22 @@ mod builder {
             // Try to unwrap filter or set withoute filter (all)
             let filter: Condition = filter.unwrap_or(Condition::all());
 
-            let mut result = E::find().filter(filter.to_owned()).offset(offset);
+            let mut result = E::find().filter(filter).offset(offset);
             if limit >= 0 {
                 result = result.limit(limit as u64);
             }
             result
+        }
+
+        fn select_only<C, I>(filter: Option<Condition>, columns: I) -> Select<E>
+        where
+            C: ColumnTrait,
+            I: IntoIterator<Item = C>,
+        {
+            // Try to unwrap filter or set withoute filter (all)
+            let filter: Condition = filter.unwrap_or(Condition::all());
+
+            E::find().select_only().columns(columns).filter(filter)
         }
     }
 }
